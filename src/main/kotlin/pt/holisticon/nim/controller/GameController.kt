@@ -1,24 +1,30 @@
 package pt.holisticon.nim.controller
 
-import jakarta.websocket.server.PathParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import pt.holisticon.nim.domain.dto.GameStateDto
 import pt.holisticon.nim.exception.EntityNotFoundException
 import pt.holisticon.nim.exception.InvalidMoveException
 import pt.holisticon.nim.exception.InvalidParametersException
-import pt.holisticon.nim.extension.GameStateExtension.toEntity
 import pt.holisticon.nim.service.GameService
 
+@Tag(name = "Game Controller", description = "The Game controller Api")
 @RestController
 class GameController(val gameService: GameService) {
 
-    @PostMapping("/start-game")
+    @Operation(
+        summary = "Start Nim Game",
+        description = "Creates a new nim game with parameters provided."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Successful start game."),
+        ApiResponse(responseCode = "400", description = "Invalid parameters provided.")
+    )
+    @PostMapping("/start-game", produces = (["application/json"]))
     fun startGame(
         @RequestParam totalMatches: Int,
         @RequestParam maxMatchesPerTurn: Int
@@ -26,7 +32,7 @@ class GameController(val gameService: GameService) {
         //Initialize a new game with custom settings
         return try {
             ResponseEntity.ok(gameService.startGame(totalMatches, maxMatchesPerTurn))
-        }catch (e: InvalidParametersException) {
+        } catch (e: InvalidParametersException) {
             val gameStateDto = GameStateDto(
                 message = e.message
             )
@@ -35,7 +41,15 @@ class GameController(val gameService: GameService) {
 
     }
 
-    @GetMapping("/state/{id}")
+    @Operation(
+        summary = "Fetch game state",
+        description = "Fetches the game state for the game identification provided."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Successful fetching game state."),
+        ApiResponse(responseCode = "404", description = "No game state found.")
+    )
+    @GetMapping("/state/{id}", produces = (["application/json"]))
     fun getGameState(@PathVariable("id") id: String): ResponseEntity<GameStateDto> {
         //Fetches the game state from database.
         return try {
@@ -46,6 +60,14 @@ class GameController(val gameService: GameService) {
         }
     }
 
+    @Operation(
+        summary = "Reset game",
+        description = "Resets the game with id provided, with default configuration."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Successful resets the game."),
+        ApiResponse(responseCode = "404", description = "No game state found.")
+    )
     @PutMapping("/reset/{id}")
     fun resetGame(@PathVariable("id") id: String): ResponseEntity<GameStateDto> {
         //Resets the game to default state and in the beginning
@@ -57,6 +79,14 @@ class GameController(val gameService: GameService) {
         }
     }
 
+    @Operation(
+        summary = "Make Player move",
+        description = "This endpoint allows the player to take matches on game provided."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Successful fetching game state."),
+        ApiResponse(responseCode = "400", description = "Invalid move by the player based on playerMoves")
+    )
     @PostMapping("/player-move/{id}/{playerMoves}")
     fun playerMove(
         @PathVariable("id") id: String,
@@ -74,7 +104,14 @@ class GameController(val gameService: GameService) {
         }
 
     }
-
+    @Operation(
+        summary = "Make Computer move",
+        description = "This endpoint does a computer move, if followed after player turn"
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Successful fetching game state."),
+        ApiResponse(responseCode = "500", description = "If computer can't make a move.")
+    )
     @PostMapping("/computer-move/{id}")
     fun computerMove(@PathVariable("id") id: String): ResponseEntity<GameStateDto> {
         return try {
