@@ -120,7 +120,7 @@ class GameService(val gameRepository: GameRepository, val randomNumberGenerator:
 
         if (isGameFinished(currentGameState)) {
             logger.error("Game id $id already finished")
-            return currentGameState.toDto() //return the state already provided by the database since its already over.
+            return currentGameState.toDto() //return the state already provided by the database since It's already over.
         }
 
         if (playerMoves < 1 || playerMoves > currentGameState.maxMatchesPerTurn) {
