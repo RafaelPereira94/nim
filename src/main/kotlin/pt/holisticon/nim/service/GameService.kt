@@ -18,6 +18,9 @@ import pt.holisticon.nim.util.Constant.MOVE_SUCCESSFUL
 import pt.holisticon.nim.util.Constant.PLAYER_WINNER
 import pt.holisticon.nim.util.RandomNumberGenerator
 
+private const val DEFAULT_NUMBER_MATCHES = 13
+private const val DEFAULT_NUMBER_OF_MATCHES_PER_TURN = 3
+
 @Service
 class GameService(val gameRepository: GameRepository, val randomNumberGenerator: RandomNumberGenerator) {
     companion object {
@@ -25,8 +28,12 @@ class GameService(val gameRepository: GameRepository, val randomNumberGenerator:
     }
 
     /**
-     * This method creates a new game and persists it on database the gameState with
-     * parameters.
+     * Starts a new game with the specified parameters.
+     *
+     * @param totalMatches The total number of matches in the game.
+     * @param maxMatchesPerTurn The maximum number of matches a player can remove per turn.
+     * @return A [GameStateDto] representing the initial state of the game.
+     * @throws InvalidParametersException If the provided parameters are invalid (totalMatches <= 0 or maxMatchesPerTurn <= 0).
      */
     fun startGame(totalMatches: Int, maxMatchesPerTurn: Int): GameStateDto {
         logger.info("Creating new game with $totalMatches total matches and $maxMatchesPerTurn max matches per turn")
@@ -46,6 +53,13 @@ class GameService(val gameRepository: GameRepository, val randomNumberGenerator:
         return gameState.toDto()
     }
 
+    /**
+     * Retrieves the game state for a given game ID.
+     *
+     * @param id The unique identifier of the game.
+     * @return A [GameStateDto] representing the current state of the game.
+     * @throws EntityNotFoundException If the game with the specified ID is not found.
+     */
     fun getGameState(id: String): GameStateDto {
         logger.info("Getting game state for id $id")
         val gameState = gameRepository.findById(id)
@@ -57,17 +71,24 @@ class GameService(val gameRepository: GameRepository, val randomNumberGenerator:
         }
     }
 
+    /**
+     * Resets a game with the specified ID to its initial state.
+     *
+     * @param id The unique identifier of the game to be reset.
+     * @return A [GameStateDto] representing the game in its reset state.
+     * @throws EntityNotFoundException If the game with the specified ID is not found.
+     */
     fun resetGame(id: String): GameStateDto {
         logger.info("Reset game with id $id")
         val gameState = gameRepository.findById(id)
         return if (gameState.isPresent) {
             val game = gameState.get()
             val copy = game.copy(
-                maxMatchesPerTurn = 3,
-                matchesInHeap = 13,
+                maxMatchesPerTurn = DEFAULT_NUMBER_OF_MATCHES_PER_TURN,
+                matchesInHeap = DEFAULT_NUMBER_MATCHES,
                 currentPlayer = PlayerType.PLAYER,
                 isGameOver = false,
-                totalMatches = 13,
+                totalMatches = DEFAULT_NUMBER_MATCHES,
                 winner = null,
                 message = GAME_RESET
             )
@@ -79,6 +100,15 @@ class GameService(val gameRepository: GameRepository, val randomNumberGenerator:
         }
     }
 
+    /**
+     * Represents a player's move in the game.
+     *
+     * @param id The unique identifier of the game.
+     * @param playerMoves The number of matches the player wants to remove in this move.
+     * @return A [GameStateDto] representing the updated state of the game after the player's move.
+     * @throws InvalidMoveException If the move is invalid, such as being out of turn, taking too many or too few matches, or trying to move after the game is over.
+     * @throws EntityNotFoundException If the game with the specified ID is not found.
+     */
     fun playerMove(id: String, playerMoves: Int): GameStateDto {
         logger.info("Starting player move with id $id and player moves $playerMoves")
         val currentGameState = getGameState(id).toEntity()
@@ -120,6 +150,14 @@ class GameService(val gameRepository: GameRepository, val randomNumberGenerator:
         return gameRepository.save(currentGameState).toDto()
     }
 
+    /**
+     * Represents the computer's move in the game.
+     *
+     * @param id The unique identifier of the game.
+     * @return A [GameStateDto] representing the updated state of the game after the computer's move.
+     * @throws InvalidMoveException If the move is invalid, such as being out of turn, taking too many or too few matches, or trying to move after the game is over.
+     * @throws EntityNotFoundException If the game with the specified ID is not found.
+     */
     fun computerMove(id: String): GameStateDto {
         val currentGameState = getGameState(id).toEntity()
 
