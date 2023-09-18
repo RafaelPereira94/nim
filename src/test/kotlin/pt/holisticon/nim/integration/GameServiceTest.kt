@@ -221,4 +221,39 @@ class GameServiceTest {
         }
     }
 
+    @Test
+    fun testPlayerWinsGame() {
+        `when`(randomNumberGenerator.generateRandomNumber(anyInt(), anyInt()))
+            .thenReturn(2)
+
+        val startGameState = gameService.startGame(8,2)
+        gameService.playerMove(startGameState.gameId!!, 2)
+        gameService.computerMove(startGameState.gameId!!)
+        gameService.playerMove(startGameState.gameId!!, 2)
+        val computerGameState = gameService.computerMove(startGameState.gameId!!)
+
+        assertNotNull(computerGameState)
+        assertEquals(0, computerGameState.matchesInHeap)
+        assertTrue(computerGameState.isGameOver)
+        assertEquals(PlayerType.PLAYER, computerGameState.winner)
+    }
+
+    @Test
+    fun testComputerWinsGame() {
+        `when`(randomNumberGenerator.generateRandomNumber(anyInt(), anyInt()))
+            .thenReturn(2)
+
+        val startGameState = gameService.startGame(10,2)
+        gameService.playerMove(startGameState.gameId!!, 2)
+        gameService.computerMove(startGameState.gameId!!)
+        gameService.playerMove(startGameState.gameId!!, 2)
+        gameService.computerMove(startGameState.gameId!!)
+        val playerGameState = gameService.playerMove(startGameState.gameId!!, 2)
+
+        assertNotNull(playerGameState)
+        assertEquals(0, playerGameState.matchesInHeap)
+        assertTrue(playerGameState.isGameOver)
+        assertEquals(PlayerType.COMPUTER, playerGameState.winner)
+    }
+
 }
